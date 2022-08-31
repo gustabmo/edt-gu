@@ -1,5 +1,21 @@
-function myFunction() {
-  // comment 2 feito no computador
-  // comment 4 feito no computador
-  // comment 5 feito no computador
+function fillCalendar() {
+  let sheet = SpreadsheetApp.getActiveSheet();
+  let edts = sheet.getDataRange().getValues();
+
+  line = 0;
+  edts.forEach ( function(edt) {
+    line++;
+    idsIn = edt[12].split(" \,\;");
+    if (edt[9] instanceof Date) {
+      exceptDates = [edt[9]];
+    } else {
+      exceptDates = edt[9].split(" \,\;");
+      exceptDates.foreach ( function(textToDate) {
+        textToDate = Date(textToDate);
+      })
+    }
+    if (edt[2] instanceof Date) && (edt[3] instanceof Number) {
+      //
+    }
+  })
 }
