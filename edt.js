@@ -10,11 +10,12 @@ function fillCalendar() {
       exceptDates = [edt[9]];
     } else {
       exceptDates = edt[9].split(" \,\;");
-      exceptDates.foreach ( function(textToDate) {
-        textToDate = Date(textToDate);
+      exceptDates.foreach ( function(element,indexED,ED) {
+        ED[indexED] = Date(ED[indexED]);
       })
     }
-    if (edt[2] instanceof Date) && (edt[3] instanceof Number) {
+    if ((edt[2] instanceof Date) && (edt[3] instanceof Number)) {
+      //
       //
     }
   })
