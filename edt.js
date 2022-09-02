@@ -1,47 +1,51 @@
 function fillCalendar() {
   let sheet = SpreadsheetApp.getActiveSheet();
   let edts = sheet.getDataRange().getValues();
-  let exceptDates = [];
-  let hours = 0.0;
   let ids = [];
+  let hours = 0.0;
 
   let sheetLine = 0;
   edts.forEach ( function(edt) {
     sheetLine++;
-    //Logger.log ( 'line '+sheetLine+' [0]:'+edt[0]+' [1]:'+edt[1]+' [2]:'+edt[2]);
-    if ((edt[0] != "") && (edt[1] instanceof Date) && (edt[2] != "")) {
-      addThisEdt ( edt, hours, ids );
+    if ((sheetLine<5) // @@@@@@@@@@@@@@@@@@@@@@
+    && (edt[0] != "") && (edt[1] instanceof Date) && (edt[2] != "")) {
+      hours,ids = addThisEdt ( edt );
     }
   })
 }
 
 function addThisEdt ( edt ) {
-  //Logger.log('@@ addThisEdt '+edt[0]);
-  let calendarId = 'ei0npiqhdcsc3rc9k0oj5s4u2o';
+  let calendarId = 'ei0npiqhdcsc3rc9k0oj5s4u2o@group.calendar.google.com';
   let idsIn = edt[11].split(" \,\;");
   let idsOut = [];
-  let totalHours = 0;
+  let totalMs = 0;
   let exceptDates = [];
 
-  if (edt[9] == '') {
-  } else if (edt[9] instanceof Date) {
+  Logger.log ( '@@ exceptdates 1:'+edt[8]);
+  if (edt[8] instanceof Date) {
     exceptDates = [edt[8]];
   } else {
-    exceptDates = edt[8].split(" \,\;");
+    exceptDates = edt[8].split(" ");
+    Logger.log ( '@@ exceptdates 2:'+exceptDates);
     exceptDates.forEach ( function(element,indexED,excD) {
-      excD[indexED] = Date(excD[indexED]);
+      Logger.log ( '@@ exceptdates 3.1:'+excD[indexED]);
+      excD[indexED] = new Date(excD[indexED]+"T00:00:00Z");
+      Logger.log ( '@@ exceptdates 3.2:'+excD[indexED]);
     })
   }
+  Logger.log ( '@@ exceptdates 4:'+exceptDates);
 
+  Logger.log ( '@@ datems 5.1:'+edt[1]);
   let datems = edt[1].getTime();
+  Logger.log ( '@@ datems 5.2:'+datems);
+  Logger.log ( '@@ datems 5.3:'+new Date(datems));
   let numWeeks = Number(edt[2]);
-  Logger.log ( 'num weeks:'+numWeeks+ ' exceptDates:'+exceptDates);
+  numWeeks = 1; // @@@@@@@@@@@@@@@@@@@@@@@@@@@@
   for ( countWeeks=0; countWeeks<numWeeks; countWeeks++ ) {
     for ( dow=0; dow<5; dow++ ) {
       let times = splitTimes ( edt[3+dow] );
-      Logger.log('edt[]:'+edt[3+dow]+' times:'+times);
-      if ((times != null) && (! exceptDates.includes ( Date ))) {
-        idsOut.append (
+      if ((times != null) && (! exceptDates.includes ( new Date(datems) ))) {
+        idsOut.push (
           Calendar.Events.insert (
             {
               summary: edt[0],
@@ -58,50 +62,37 @@ function addThisEdt ( edt ) {
             calendarId
           ).id
         );
-        totalHours += times[1]-times[0];
+        totalMs += times[1]-times[0];
         Logger.log('@@ added '+edt[0]);
       }
-      date++;
+      datems += 24*60*60*1000;
     }
-    date += 2; // jumps over the weekend
+    datems += 2*24*60*60*1000; // jumps over the weekend
   }
 
-  Logger.log ( 'end addthisedt ids:'+idsOut );
-  return { totalHours:totalHours, idsOut:idsOut };
+  return { totalHours:totalMs/1000/60/60, idsOut:idsOut };
 }
 
 function splitTimes ( st ) {
-  Logger.log('splitTimes 0 '+st);
-  st01 = st.split("-");
-  Logger.log('splitTimes 1 '+st01);
-  if (st01.length != 2) return null;
-  st0 = st01[0].split(":");
-  st1 = st01[1].split(":");
-  Logger.log('splitTimes 2 '+st0+' '+st1 );
+  sthm = st.split("-");
+  if (sthm.length != 2) return null;
+  st0 = sthm[0].split(":");
+  st1 = sthm[1].split(":");
   if ((st0.length != 2) || (st1.length != 2)) return null;
   t0h = Number(st0[0]);
   t0m = Number(st0[1]);
   t1h = Number(st1[0]);
   t1m = Number(st1[1]);
-  Logger.log('splitTimes 3 '+t0h+' '+t0m+' '+t1h+' '+t1m );
-  Logger.log('splitTimes 4 '+typeof(t0h)+' '+typeof(t0m)+' '+typeof(t1h)+' '+typeof(t1m) );
-  Logger.log('splitTimes 4.1.1 '+(typeof(t0h) != Number));
-  Logger.log('splitTimes 4.1.2 '+(typeof(t0m) != Number));
-  Logger.log('splitTimes 4.1.3 '+(typeof(t1h) != Number));
-  Logger.log('splitTimes 4.1.4 '+(typeof(t1m) != Number));
-  Logger.log('splitTimes 4.2 '+(t0h < 0) || (t0h >= 24) || (t0m < 0) || (t0m >= 60) );
-  Logger.log('splitTimes 4.3 '+(t0h < 0) || (t0h >= 24) || (t0m < 0) || (t0m >= 60) );
   if (
-    isNaN(t0h) || isNaN(t0m) || isNaN(t1h) || isNaN(t1m)
+    (isNaN(t0h) || isNaN(t0m) || isNaN(t1h) || isNaN(t1m))
     ||
-    (t0h < 0) || (t0h >= 24) || (t0m < 0) || (t0m >= 60)
+    ((t0h < 0) || (t0h >= 24) || (t0m < 0) || (t0m >= 60))
     ||
-    (t0h < 0) || (t0h >= 24) || (t0m < 0) || (t0m >= 60)
+    ((t1h < 0) || (t1h >= 24) || (t1m < 0) || (t1m >= 60))
   ) return null;
-  Logger.log('splitTimes 5');
   return [
-    (t0h*60 + t0m)*60*1000,
-    (t1h*60 + t1m)*60*1000
+    (t0h*60 + t0m) * 60 * 1000,
+    (t1h*60 + t1m) * 60 * 1000
   ];
 }
 
